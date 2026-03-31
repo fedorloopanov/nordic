@@ -4,106 +4,149 @@ import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class Gui extends Application {
+public class App extends Application {
 
-    private final ObservableList<String> history = FXCollections.observableArrayList();
+    private final ObservableList<String> orderHistory = FXCollections.observableArrayList();
 
     @Override
     public void start(Stage stage) {
-        Label title = new Label("Оформление заказа");
-        title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-
+        Label titleLabel = new Label("Заказ нордского рагу");
         Label baseDishLabel = new Label("Базовое блюдо: Нордское рагу (50 септимов)");
 
         CheckBox fireSauceBox = new CheckBox("Огненный соус (+10)");
-        CheckBox venisonBox = new CheckBox("Двойная порция оленины (+20)");
+        CheckBox doubleVenisonBox = new CheckBox("Двойная порция оленины (+20)");
         CheckBox berriesBox = new CheckBox("Свежие ягоды (+6)");
         CheckBox flatbreadBox = new CheckBox("Нордская лепешка (+7)");
 
+        Label orderLabel = new Label("Текущий заказ: Нордское рагу");
+        Label priceLabel = new Label("Цена: 50 септимов");
         Label infoLabel = new Label("Можно выбрать не более 3 добавок");
-        Label currentOrderLabel = new Label();
-        Label currentPriceLabel = new Label();
 
-        Button makeOrderButton = new Button("Оформить заказ");
+        Button orderButton = new Button("Оформить заказ");
         Button clearButton = new Button("Сбросить");
 
-        ListView<String> historyList = new ListView<>(history);
-        historyList.setPrefHeight(200);
+        ListView<String> historyListView = new ListView<>(orderHistory);
+        historyListView.setPrefHeight(180);
 
-        Runnable updater = () -> {
-            int selected = countSelected(fireSauceBox, venisonBox, berriesBox, flatbreadBox);
-            boolean limitReached = selected >= 3;
+        fireSauceBox.setOnAction(e -> updateCurrentOrder(
+                fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox,
+                orderLabel, priceLabel, infoLabel
+        ));
 
-            if (!fireSauceBox.isSelected()) fireSauceBox.setDisable(limitReached);
-            if (!venisonBox.isSelected()) venisonBox.setDisable(limitReached);
-            if (!berriesBox.isSelected()) berriesBox.setDisable(limitReached);
-            if (!flatbreadBox.isSelected()) flatbreadBox.setDisable(limitReached);
+        doubleVenisonBox.setOnAction(e -> updateCurrentOrder(
+                fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox,
+                orderLabel, priceLabel, infoLabel
+        ));
 
-            Dish dish = buildDish(fireSauceBox, venisonBox, berriesBox, flatbreadBox);
-            currentOrderLabel.setText("Текущий заказ: " + dish.getName());
-            currentPriceLabel.setText("Цена: " + dish.getPrice() + " септимов");
-        };
+        berriesBox.setOnAction(e -> updateCurrentOrder(
+                fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox,
+                orderLabel, priceLabel, infoLabel
+        ));
 
-        fireSauceBox.setOnAction(e -> updater.run());
-        venisonBox.setOnAction(e -> updater.run());
-        berriesBox.setOnAction(e -> updater.run());
-        flatbreadBox.setOnAction(e -> updater.run());
+        flatbreadBox.setOnAction(e -> updateCurrentOrder(
+                fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox,
+                orderLabel, priceLabel, infoLabel
+        ));
 
-        makeOrderButton.setOnAction(e -> {
-            Dish dish = buildDish(fireSauceBox, venisonBox, berriesBox, flatbreadBox);
-            history.add(new OrderRecord(dish.getName(), dish.getPrice()).toString());
-            infoLabel.setText("Заказ добавлен в свиток заказов");
+        orderButton.setOnAction(e -> {
+            Dish dish = buildDish(fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox);
+            OrderRecord record = new OrderRecord(dish.getName(), dish.getPrice());
+            orderHistory.add(record.toString());
+            infoLabel.setText("Заказ добавлен в историю");
         });
 
         clearButton.setOnAction(e -> {
             fireSauceBox.setSelected(false);
-            venisonBox.setSelected(false);
+            doubleVenisonBox.setSelected(false);
             berriesBox.setSelected(false);
             flatbreadBox.setSelected(false);
 
             fireSauceBox.setDisable(false);
-            venisonBox.setDisable(false);
+            doubleVenisonBox.setDisable(false);
             berriesBox.setDisable(false);
             flatbreadBox.setDisable(false);
 
+            orderLabel.setText("Текущий заказ: Нордское рагу");
+            priceLabel.setText("Цена: 50 септимов");
             infoLabel.setText("Можно выбрать не более 3 добавок");
-            updater.run();
         });
 
-        updater.run();
-
-        HBox buttonBox = new HBox(10, makeOrderButton, clearButton);
-        buttonBox.setAlignment(Pos.CENTER_LEFT);
-
-        VBox root = new VBox(12,
-                title,
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(15));
+        root.getChildren().addAll(
+                titleLabel,
                 baseDishLabel,
-                new Label("Добавки:"),
                 fireSauceBox,
-                venisonBox,
+                doubleVenisonBox,
                 berriesBox,
                 flatbreadBox,
-                currentOrderLabel,
-                currentPriceLabel,
-                buttonBox,
+                orderLabel,
+                priceLabel,
                 infoLabel,
-                new Label("Свиток заказов:"),
-                historyList
+                orderButton,
+                clearButton,
+                new Label("История заказов:"),
+                historyListView
         );
 
-        root.setPadding(new Insets(15));
-
-        Scene scene = new Scene(root, 520, 500);
+        Scene scene = new Scene(root, 430, 500);
         stage.setTitle("Гарцующая Кобыла");
         stage.setScene(scene);
         stage.show();
+    }
+
+    private void updateCurrentOrder(
+            CheckBox fireSauceBox,
+            CheckBox doubleVenisonBox,
+            CheckBox berriesBox,
+            CheckBox flatbreadBox,
+            Label orderLabel,
+            Label priceLabel,
+            Label infoLabel
+    ) {
+        enforceToppingLimit(fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox);
+
+        Dish dish = buildDish(fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox);
+        orderLabel.setText("Текущий заказ: " + dish.getName());
+        priceLabel.setText("Цена: " + dish.getPrice() + " септимов");
+
+        int selectedCount = countSelected(fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox);
+        if (selectedCount >= 3) {
+            infoLabel.setText("Достигнут максимум: 3 добавки");
+        } else {
+            infoLabel.setText("Можно выбрать не более 3 добавок");
+        }
+    }
+
+    private void enforceToppingLimit(
+            CheckBox fireSauceBox,
+            CheckBox doubleVenisonBox,
+            CheckBox berriesBox,
+            CheckBox flatbreadBox
+    ) {
+        int selectedCount = countSelected(fireSauceBox, doubleVenisonBox, berriesBox, flatbreadBox);
+        boolean limitReached = selectedCount >= 3;
+
+        if (!fireSauceBox.isSelected()) {
+            fireSauceBox.setDisable(limitReached);
+        }
+        if (!doubleVenisonBox.isSelected()) {
+            doubleVenisonBox.setDisable(limitReached);
+        }
+        if (!berriesBox.isSelected()) {
+            berriesBox.setDisable(limitReached);
+        }
+        if (!flatbreadBox.isSelected()) {
+            flatbreadBox.setDisable(limitReached);
+        }
     }
 
     private int countSelected(CheckBox... boxes) {
@@ -116,13 +159,18 @@ public class Gui extends Application {
         return count;
     }
 
-    private Dish buildDish(CheckBox fireSauceBox, CheckBox venisonBox, CheckBox berriesBox, CheckBox flatbreadBox) {
+    private Dish buildDish(
+            CheckBox fireSauceBox,
+            CheckBox doubleVenisonBox,
+            CheckBox berriesBox,
+            CheckBox flatbreadBox
+    ) {
         Dish dish = new NordicRagout();
 
         if (fireSauceBox.isSelected()) {
             dish = new FireSauceDecorator(dish);
         }
-        if (venisonBox.isSelected()) {
+        if (doubleVenisonBox.isSelected()) {
             dish = new DoubleVenisonDecorator(dish);
         }
         if (berriesBox.isSelected()) {
