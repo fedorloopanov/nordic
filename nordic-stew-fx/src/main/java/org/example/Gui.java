@@ -11,7 +11,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class App extends Application {
+public class Gui extends Application {
 
     private final ObservableList<String> history = FXCollections.observableArrayList();
 
